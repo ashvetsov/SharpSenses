@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +21,40 @@ namespace SharpSenses.RealSense {
 
         public override int ResolutionHeight {
             get { return 480; }
+        }
+
+        /// <summary>
+        /// Gets current frame as an Image from camera.
+        /// </summary>
+        public Image CurrentFrameImage
+        {
+            get
+            {
+                return this.lastFrameImage;
+            }
+        }
+        private Image lastFrameImage = null;
+
+        private void SaveFrameImage()
+        {
+            PXCMCapture.Sample sample = _manager.QueryFaceSample();
+            if (sample == null)
+            {
+                _manager.ReleaseFrame();
+                return;
+            }
+
+            PXCMImage image = sample.color;
+            PXCMImage.ImageData data;
+
+            pxcmStatus status = image.AcquireAccess(PXCMImage.Access.ACCESS_READ, PXCMImage.PixelFormat.PIXEL_FORMAT_RGB32, out data);
+            if (status < pxcmStatus.PXCM_STATUS_NO_ERROR)
+            {
+                throw new Exception(status.ToString());
+            }
+
+            lastFrameImage = data.ToBitmap(0, this.ResolutionWidth, this.ResolutionHeight);
+            image.ReleaseAccess(data);
         }
 
         public int CyclePauseInMillis { get; set; }
@@ -97,6 +132,8 @@ namespace SharpSenses.RealSense {
                 faceData.Update();
                 TrackFace(faceData);
                 TrackEmotions();
+
+                SaveFrameImage();
 
                 _manager.ReleaseFrame();
                 if (CyclePauseInMillis > 0) {
