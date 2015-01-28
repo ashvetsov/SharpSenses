@@ -16,11 +16,11 @@ namespace SharpSenses.RealSense {
         private CancellationTokenSource _cancellationToken;
 
         public override int ResolutionWidth {
-            get { return 640; }
+            get { return 1280; }
         }
 
         public override int ResolutionHeight {
-            get { return 480; }
+            get { return 720; }
         }
 
         /// <summary>
@@ -35,9 +35,9 @@ namespace SharpSenses.RealSense {
         }
         private Image lastFrameImage = null;
 
-        private void SaveFrameImage()
+        private void SaveFrameImage(PXCMFaceData faceData, PXCMHandData handData)
         {
-            PXCMCapture.Sample sample = _manager.QueryFaceSample();
+            PXCMCapture.Sample sample = _manager.QuerySample();
             if (sample == null)
             {
                 _manager.ReleaseFrame();
@@ -53,8 +53,87 @@ namespace SharpSenses.RealSense {
                 throw new Exception(status.ToString());
             }
 
-            lastFrameImage = data.ToBitmap(0, this.ResolutionWidth, this.ResolutionHeight);
+            // TODO: Can not understand why image is cropped?
+            lastFrameImage = data.ToBitmap(0, ResolutionWidth, ResolutionHeight);
             image.ReleaseAccess(data);
+
+            // Drawing debug information.
+            try
+            {
+                Color color = Color.FromArgb(0xff, 0xff, 0xff, 0x00);
+                SolidBrush brush = new SolidBrush(color);
+
+                using (Graphics graphics = Graphics.FromImage(lastFrameImage))
+                {
+                    int debugMessagesCount = 0;
+                    var debugMessage = new Action<string>(s =>
+                    {
+                        graphics.DrawString(s, new Font("Arial", 15), brush, 10, 10 + debugMessagesCount++ * 20);
+                    });
+
+                    var drawPoint = new Action<PXCMPointF32>(p =>
+                    {
+                        if (2 < p.x && p.x < ResolutionWidth - 2 &&
+                            2 < p.y && p.x < ResolutionHeight - 2)
+                        {
+                            graphics.FillEllipse(brush, p.x - 2, p.y - 2, 4, 4);
+                        }
+                    });
+
+                    // Drawing face debug data.
+                    var faces = faceData.QueryFaces();
+                    if (faces.Length == 1)
+                    {
+                        var face = faces.First();
+                        var faceLandmarks = face.QueryLandmarks();
+
+                        PXCMFaceData.LandmarkPoint[] facePoints = null;
+                        if (faceLandmarks != null && faceLandmarks.QueryPoints(out facePoints))
+                        {
+                            foreach (var point in facePoints)
+                            {
+                                drawPoint(point.image);
+                            }
+                        }
+                    }
+                    else if (faces.Length == 0)
+                    {
+
+                        debugMessage("No faces detected");
+                    }
+                    else
+                    {
+                        debugMessage("More than one face on the camera");
+                    }
+
+                    // Drawing hands debug data.
+                    int numHands = handData.QueryNumberOfHands();
+                    if (numHands == 0)
+                    {
+                        debugMessage("No hands detected");
+                    }
+                    else
+                    {
+                        for (var i = 0; i < numHands; i++)
+                        {
+                            PXCMHandData.IHand hand;
+                            if (handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_LEFT_HANDS, i, out hand) == pxcmStatus.PXCM_STATUS_NO_ERROR)
+                            {
+                                var handCenter = hand.QueryMassCenterImage();
+                                if (50 < handCenter.x && handCenter.x < ResolutionWidth - 50 &&
+                                    50 < handCenter.y && handCenter.y < ResolutionHeight - 50)
+                                {
+                                    graphics.DrawRectangle(new Pen(brush), handCenter.x - 50, handCenter.y - 50, 100, 100);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Write(e);
+            }
         }
 
         public int CyclePauseInMillis { get; set; }
@@ -64,6 +143,7 @@ namespace SharpSenses.RealSense {
             _manager = _session.CreateSenseManager();
             ConfigurePoses();
             ConfigureGestures();
+            Debug.WriteLine("Visual Module");
             Debug.WriteLine("SDK Version {0}.{1}", _session.QueryVersion().major, _session.QueryVersion().minor);
         }
 
@@ -133,7 +213,7 @@ namespace SharpSenses.RealSense {
                 TrackFace(faceData);
                 TrackEmotions();
 
-                SaveFrameImage();
+                SaveFrameImage(faceData, handData);
 
                 _manager.ReleaseFrame();
                 if (CyclePauseInMillis > 0) {
