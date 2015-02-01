@@ -24,9 +24,9 @@ namespace SharpSenses.RealSense
         PXCMAudioSource source;
         PXCMSpeechRecognition sr;
 
-        public VoiceRecognition()
+        public VoiceRecognition(PXCMSession session = null)
         {
-            session = PXCMSession.CreateInstance();
+            this.session = session ?? PXCMSession.CreateInstance();
             Debug.WriteLine("Voice Recognition Module");
             Debug.WriteLine("SDK Version {0}.{1}", session.QueryVersion().major, session.QueryVersion().minor);
         }

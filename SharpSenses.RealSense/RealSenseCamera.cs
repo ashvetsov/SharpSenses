@@ -138,8 +138,8 @@ namespace SharpSenses.RealSense {
 
         public int CyclePauseInMillis { get; set; }
 
-        public RealSenseCamera() {
-            _session = PXCMSession.CreateInstance();
+        public RealSenseCamera(PXCMSession session = null) {
+            _session = session ?? PXCMSession.CreateInstance();
             _manager = _session.CreateSenseManager();
             ConfigurePoses();
             ConfigureGestures();
