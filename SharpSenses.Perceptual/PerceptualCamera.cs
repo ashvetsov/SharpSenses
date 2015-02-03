@@ -18,6 +18,10 @@ namespace SharpSenses.Perceptual {
             get { return 240; }
         }
 
+        public override ISpeech Speech {
+            get { throw new NotImplementedException(); }
+        }
+
         public override void Start() {
             _pipeline.Start();
         }
@@ -202,6 +206,10 @@ namespace SharpSenses.Perceptual {
 
         public override void Dispose() {
             _pipeline.Dispose();
+        }
+
+        protected override IFaceRecognizer GetFaceRecognizer() {
+            return null;
         }
     }
 }

@@ -10,17 +10,52 @@ namespace SharpSenses.RealSense.Playground {
 
         private static void Main(string[] args) {
             _cam = Camera.Create();
-            _cam.Start();
-            _cam.LeftHand.Visible += (s,a) => Console.WriteLine("Hi l");
-            _cam.RightHand.Visible += (s,a) => Console.WriteLine("Hi r");
+            //_cam.Start();
 
+            //_cam.Speech.Say("Hello world!");
+            //_cam.Speech.Say("Hello world!");
+            //_cam.Speech.Say("Hello world!");
+
+            _cam.Speech.SpeechRecognized += (sender, eventArgs) => {
+                Console.WriteLine("-> " + eventArgs.Sentence);
+            };
+
+            _cam.Speech.EnableRecognition();
+            Console.WriteLine("Started");
+            Console.ReadLine();
+            Console.WriteLine("Stopped");
+            Console.ReadLine();
+            _cam.Speech.EnableRecognition();
+            Console.WriteLine("Started");
+
+
+            //_cam.LeftHand.Visible += (s,a) => Console.WriteLine("Hi  l");
+            //_cam.LeftHand.NotVisible += (s,a) => Console.WriteLine("Bye l");
+            //_cam.RightHand.Visible += (s,a) => Console.WriteLine("Hi r");
+
+            //_cam.Gestures.SlideRight += (s, a) => Console.WriteLine(a.GestureName);
+            //_cam.Gestures.SlideLeft += (s, a) => Console.WriteLine(a.GestureName);
+            //_cam.Gestures.SlideUp += (s, a) => Console.WriteLine(a.GestureName);
+            //_cam.Gestures.SlideDown += (s, a) => Console.WriteLine(a.GestureName);
+
+            //int xmoved = 0;
+            //_cam.LeftHand.Moved += (s, a) => {
+            //    Console.WriteLine(++xmoved);
+            //};
+
+            //_cam.RightHand.Moved += (s,a) => Console.WriteLine("-> " + a.NewPosition.Image.X);
+
+            //_cam.Face.RecognizeFace();
+            //_cam.Face.FaceRecognized += (s, a) => {
+            //    Console.WriteLine("Hello " + a.UserId); 
+            //};
 
             //_cam.LeftHand.FingerOpened += (sender, eventArgs) => {
             //    var finger = (Finger) sender;
             //    Console.WriteLine("Finger Open: " + finger.Kind);
             //};
 
-            _cam.Face.FacialExpresssionChanged += (s, e) => Console.WriteLine("FacialExpression: " + e.NewFacialExpression);
+            //_cam.Face.FacialExpresssionChanged += (s, e) => Console.WriteLine("FacialExpression: " + e.NewFacialExpression);
 
 
             Action moved = () => {

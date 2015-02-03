@@ -2,8 +2,27 @@
 
 namespace SharpSenses {
     public class Face : Item {
+        private readonly IFaceRecognizer _faceRecognizer;
+        private int _userId;
         private FacialExpression _facialExpression;
         public Mouth Mouth { get; private set; }
+
+        public event EventHandler<FaceRecognizedEventArgs> FaceRecognized;
+        public event EventHandler<FacialExpressionEventArgs> FacialExpresssionChanged;
+
+        public int UserId {
+            get { return _userId; }
+            set {
+                if (_userId == value) {
+                    return;
+                }
+                _userId = value;
+                RaisePropertyChanged(() => UserId);
+                if (_userId > 0) {
+                    OnPersonRecognized();                    
+                }
+            }
+        }
 
         public FacialExpression FacialExpression {
             get { return _facialExpression; }
@@ -17,25 +36,28 @@ namespace SharpSenses {
                 OnFacialExpresssionChanged(old, value);
             }
         }
-
-        public event EventHandler<FacialExpressionEventArgs> FacialExpresssionChanged;
-
-        public Face() {
+        
+        public Face(IFaceRecognizer faceRecognizer) {
+            _faceRecognizer = faceRecognizer;
             Mouth = new Mouth();
         }
+
+        public bool RecognizeFace() {
+            if (_faceRecognizer == null) {
+                return false;
+            }
+            _faceRecognizer.RecognizeFace();
+            return true;
+        }
+
         protected virtual void OnFacialExpresssionChanged(FacialExpression old, FacialExpression @new) {
             var handler = FacialExpresssionChanged;
             if (handler != null) handler(this, new FacialExpressionEventArgs(old, @new));
         }
-    }
 
-    public class FacialExpressionEventArgs : EventArgs {
-        public FacialExpression OldFacialExpression { get; set; }
-        public FacialExpression NewFacialExpression { get; set; }
-
-        public FacialExpressionEventArgs(FacialExpression oldFacialExpression, FacialExpression newFacialExpression) {
-            OldFacialExpression = oldFacialExpression;
-            NewFacialExpression = newFacialExpression;
+        protected virtual void OnPersonRecognized() {
+            var handler = FaceRecognized;
+            if (handler != null) handler(this, new FaceRecognizedEventArgs(UserId));
         }
     }
 }

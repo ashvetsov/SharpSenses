@@ -10,6 +10,10 @@ namespace SharpSenses.Tests {
         public IGestureSensor Gestures { get; set; }
         public IPoseSensor Poses { get; set; }
 
+        public ISpeech Speech {
+            get { return null; }
+        }
+
         public int ResolutionWidth {
             get { return 320; }
         }
@@ -21,7 +25,7 @@ namespace SharpSenses.Tests {
         public FakeCamera() {
             LeftHand = new Hand(Side.Left);
             RightHand = new Hand(Side.Right);
-            Face = new Face();
+            Face = new Face(null);
             Gestures = new GestureSensor();
             Poses = new PoseSensor();
         }

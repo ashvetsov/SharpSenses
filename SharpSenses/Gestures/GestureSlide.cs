@@ -1,33 +1,99 @@
 using System;
+using System.Diagnostics;
 
 namespace SharpSenses.Gestures {
-    public static class GestureSlide {
+    public abstract class GestureSlide {
+        protected int Middle { get; private set; }
+        private Position _last;
+        private double _startedSecundaryValue;
 
-        private static GestureSensor _gestureSensor;
+        public static int GestureLength = 15;
+        public static int SecundaryDirectionTolerance = 20;
+        public static int WrongDirectionTolerance = 3;
 
-        public static void Configue(ICamera camera, GestureSensor gestureSensor) {
-            _gestureSensor = gestureSensor;
-            CreateSlideGesture(camera.LeftHand, Direction.Left, g => _gestureSensor.OnSlideLeft(g));
-            CreateSlideGesture(camera.RightHand, Direction.Left, g => _gestureSensor.OnSlideLeft(g));
+        public bool GestureHappening { get; private set; }
 
-            CreateSlideGesture(camera.LeftHand, Direction.Right, g => _gestureSensor.OnSlideRight(g));
-            CreateSlideGesture(camera.RightHand, Direction.Right, g => _gestureSensor.OnSlideRight(g));
+        public event EventHandler SlideDetected;
 
-            CreateSlideGesture(camera.LeftHand, Direction.Up, g => _gestureSensor.OnSlideUp(g));
-            CreateSlideGesture(camera.RightHand, Direction.Up, g => _gestureSensor.OnSlideUp(g));
+        public static void Configure(ICamera camera, GestureSensor gestureSensor) {
+            var middleWidth = camera.ResolutionWidth/2;
+            var middleHeight = camera.ResolutionHeight/2;
+            var l = camera.LeftHand;
+            var r = camera.RightHand;
 
-            CreateSlideGesture(camera.LeftHand, Direction.Down, g => _gestureSensor.OnSlideDown(g));
-            CreateSlideGesture(camera.RightHand, Direction.Down, g => _gestureSensor.OnSlideDown(g));
+            int i = 0;
+            r.Moved += (s, a) => {
+                i++;
+                if (i%2 == 0) {
+                    Debug.WriteLine(a.NewPosition);
+                }
+                else {
+                    Debug.WriteLine(".");
+                }
+            };
 
-            CreateSlideGesture(camera.LeftHand, Direction.Forward, g => _gestureSensor.OnMoveForward(g));
-            CreateSlideGesture(camera.RightHand, Direction.Forward, g => _gestureSensor.OnMoveForward(g));
+            new GestureSlideLeft(l, middleWidth).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideLeft(new GestureEventArgs("Left Hand Slide Left"));
+            new GestureSlideRight(l, middleWidth).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideRight(new GestureEventArgs("Left Hand Slide Right"));
+            new GestureSlideUp(l, middleHeight).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideUp(new GestureEventArgs("Left Hand Slide Up"));
+            new GestureSlideDown(l, middleHeight).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideDown(new GestureEventArgs("Left Hand Slide Down"));
+
+            new GestureSlideLeft(r, middleWidth).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideLeft(new GestureEventArgs("Right Hand Slide Left"));
+            new GestureSlideRight(r, middleWidth).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideRight(new GestureEventArgs("Right Hand Slide Right"));
+            new GestureSlideUp(r, middleHeight).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideUp(new GestureEventArgs("Right Hand Slide Up"));
+            new GestureSlideDown(r, middleHeight).SlideDetected += (s, a) =>
+                gestureSensor.OnSlideDown(new GestureEventArgs("Right Hand Slide Down"));
         }
-   
-        private static void CreateSlideGesture(Hand hand, Direction direction, Action<GestureEventArgs> handler) {
-            var swipe = new Gesture("hand" + hand.Side + "_" + direction);
-            swipe.AddStep(300, Movement.CreateMovement(direction, hand, 12));
-            swipe.Activate();
-            swipe.GestureDetected += (s, a) => handler.Invoke(a);
+
+        protected GestureSlide(Hand hand, int middle) {
+            Middle = middle;
+            hand.Moved += HandOnMoved;
+        }
+
+        private void HandOnMoved(object sender, PositionEventArgs positionEventArgs) {
+            var current = positionEventArgs.NewPosition;
+            var lastPrimaryValue = GetLastPrimaryValue(_last);
+            var currentPrimaryValue = GetCurrentPrimaryValue(current);
+            var currentSecundaryValue = GetCurrentSecundaryValue(current);
+            if (!GestureHappening) {
+                if (IsInStartArea(currentPrimaryValue, GetBeginLimit())) {
+                    _startedSecundaryValue = currentSecundaryValue;
+                    GestureHappening = true;
+                }
+                _last = current;
+                return;
+            }
+            var dif = Math.Abs(currentSecundaryValue - _startedSecundaryValue);
+            if (dif > SecundaryDirectionTolerance ||
+                !IsRightDirection(currentPrimaryValue, lastPrimaryValue)) {
+                GestureHappening = false;
+                _last = current;
+            }
+            if (IsInEndArea(currentPrimaryValue, GetEndLimit())) {
+                OnSlideDetected();
+                GestureHappening = false;
+            }
+            _last = current;
+        }
+
+        protected abstract double GetBeginLimit();
+        protected abstract double GetEndLimit();
+        protected abstract bool IsRightDirection(double currentPrimaryValue, double lastPrimaryValue);
+        protected abstract bool IsInEndArea(double currentPrimaryValue, double endLimit);
+        protected abstract bool IsInStartArea(double currentPrimaryValue, double beginLimit);
+        protected abstract double GetLastPrimaryValue(Position lastPosition);
+        protected abstract double GetCurrentSecundaryValue(Position position);
+        protected abstract double GetCurrentPrimaryValue(Position position);
+
+        protected virtual void OnSlideDetected() {
+            var handler = SlideDetected;
+            if (handler != null) handler(this, EventArgs.Empty);
         }
     }
 }
