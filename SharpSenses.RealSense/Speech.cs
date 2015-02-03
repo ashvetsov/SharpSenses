@@ -10,11 +10,13 @@ namespace SharpSenses.RealSense {
         private PXCMSpeechRecognition.Handler _speechRecognitionHandler;
 
         public event EventHandler<SpeechRecognitionEventArgs> SpeechRecognized;
+        public event EventHandler<SpeechAlertEventArgs> SpeechAlert;
 
         public Speech(RealSenseCamera camera) {
             _camera = camera;
             _speechRecognitionHandler = new PXCMSpeechRecognition.Handler {
-                onRecognition = OnRecognition
+                onRecognition = OnRecognition,
+                onAlert = OnAlert
             };
         }
 
@@ -79,6 +81,11 @@ namespace SharpSenses.RealSense {
             FireSpeechRecognized(data.scores[0].sentence);
         }
 
+        private void OnAlert(PXCMSpeechRecognition.AlertData data)
+        {
+            FireSpeechAlert(data.label);
+        }
+
         private void EnsureSynthesisModule() {
             if (_speechSynthesisModule != null) {
                 return;
@@ -95,6 +102,11 @@ namespace SharpSenses.RealSense {
         protected virtual void FireSpeechRecognized(string sentence) {
             var handler = SpeechRecognized;
             if (handler != null) handler(this, new SpeechRecognitionEventArgs(sentence));
+        }
+
+        protected virtual void FireSpeechAlert(PXCMSpeechRecognition.AlertType alert) {
+            var handler = SpeechAlert;
+            if (handler != null) handler(this, new SpeechAlertEventArgs(alert));
         }
     }
 }
