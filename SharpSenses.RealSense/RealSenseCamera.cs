@@ -224,6 +224,7 @@ namespace SharpSenses.RealSense {
                 faceData.Update();
                 TrackFace(faceData);
                 TrackEmotions();
+                TrackHandOverFace(faceData, handData);
 
                 SaveFrameImage(faceData, handData);
 
@@ -291,6 +292,54 @@ namespace SharpSenses.RealSense {
                         Face.Mouth.Position = CreatePosition(ToPoint3D(item.image), ToPoint3D(item.world));
                         break;
                 }
+            }
+        }
+
+        private static int HANDOVERFACE_THRESHOLD = 3;
+        private bool handOverFaceActive = false;
+        private void TrackHandOverFace(PXCMFaceData faceData, PXCMHandData handData)
+        {
+            int numHands = handData.QueryNumberOfHands();
+            int pointsIntersected = 0;
+            if (numHands > 0)
+            {
+                foreach (var face in faceData.QueryFaces())
+                {
+                    var faceLandmarks = face.QueryLandmarks();
+                    PXCMFaceData.LandmarkPoint[] facePoints = null;
+                    if (faceLandmarks.QueryPoints(out facePoints))
+                    {
+                        for (var i = 0; i < numHands; i++)
+                        {
+                            PXCMHandData.IHand hand;
+                            pxcmStatus st = handData.QueryHandData(PXCMHandData.AccessOrderType.ACCESS_ORDER_BY_TIME, i, out hand);
+                            if (st == pxcmStatus.PXCM_STATUS_NO_ERROR)
+                            {
+                                var bbox = hand.QueryBoundingBoxImage();
+
+                                foreach (var point in facePoints)
+                                {
+                                    if (point.image.x < bbox.x + bbox.w && bbox.x < point.image.x &&
+                                        point.image.y < bbox.y + bbox.h && bbox.y < point.image.y)
+                                    {
+                                        pointsIntersected++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (pointsIntersected >= HANDOVERFACE_THRESHOLD && !handOverFaceActive)
+            {
+                handOverFaceActive = true;
+                _poses.OnHandOverFaceBegin();
+            }
+            else if (handOverFaceActive && pointsIntersected == 0)
+            {
+                handOverFaceActive = false;
+                _poses.OnHandOverFaceEnd();
             }
         }
 
