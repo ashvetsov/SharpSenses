@@ -173,6 +173,13 @@ namespace SharpSenses.RealSense {
             _manager.EnableHand();
             _manager.EnableFace();
             _manager.EnableEmotion();
+
+            // Enabling facial expressions tracking.
+            PXCMFaceConfiguration config = _manager.QueryFace().CreateActiveConfiguration();
+            config.QueryExpressions().Enable();
+            config.QueryExpressions().EnableAllExpressions();
+            config.ApplyChanges();
+
             using (var handModule = _manager.QueryHand()) {
                 using (var handConfig = handModule.CreateActiveConfiguration()) {
                     //handConfig.EnableAllAlerts();
@@ -224,6 +231,7 @@ namespace SharpSenses.RealSense {
                 faceData.Update();
                 TrackFace(faceData);
                 TrackEmotions();
+                TrackExpressions(faceData);
                 TrackHandOverFace(faceData, handData);
 
                 SaveFrameImage(faceData, handData);
@@ -263,6 +271,36 @@ namespace SharpSenses.RealSense {
                 Face.FacialEmotion = FacialEmotion.None;
             }
             emotionInfo.Dispose();
+        }
+
+        private static int EXPRESSION_THRESHOLD = 90;
+        private void TrackExpressions(PXCMFaceData faceData)
+        {
+            if (!Face.IsVisible) return;
+
+            var face = faceData.QueryFaces().First();
+            PXCMFaceData.ExpressionsData expressionsOutput = face.QueryExpressions();
+            if (expressionsOutput == null) {
+                Face.FacialExpressions = null;
+                return;
+            }
+
+            var activeExpressions = new List<FacialExpression>();
+            foreach (PXCMFaceData.ExpressionsData.FaceExpression exp in
+                Enum.GetValues(typeof(PXCMFaceData.ExpressionsData.FaceExpression)))
+            {
+                PXCMFaceData.ExpressionsData.FaceExpressionResult result;
+                if (expressionsOutput.QueryExpression(exp, out result))
+                {
+                    var expression = exp;
+                    int intensity = result.intensity;
+                    if (intensity >= EXPRESSION_THRESHOLD)
+                    {
+                        activeExpressions.Add((FacialExpression)expression);
+                    }
+                }
+            }
+            Face.FacialExpressions = activeExpressions.ToArray();
         }
 
         private void TrackFace(PXCMFaceData faceData) {
