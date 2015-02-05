@@ -294,6 +294,40 @@ namespace SharpSenses.RealSense {
                 {
                     var expression = exp;
                     int intensity = result.intensity;
+
+                    // As RealSense detects only RIGHT and BOTTOM eyes position,
+                    // we need to split and normalize these values.
+                    if (expression == PXCMFaceData.ExpressionsData.FaceExpression.EXPRESSION_EYES_TURN_LEFT)
+                    {
+                        if (intensity < 10)
+                        {
+                            expression = PXCMFaceData.ExpressionsData.FaceExpression.EXPRESSION_EYES_TURN_RIGHT;
+                            intensity = EXPRESSION_THRESHOLD;
+                        }
+                        else if (intensity > 30)
+                        {
+                            intensity = EXPRESSION_THRESHOLD;
+                        }
+                    }
+                    else if (expression == PXCMFaceData.ExpressionsData.FaceExpression.EXPRESSION_EYES_DOWN)
+                    {
+                        if (intensity < 15)
+                        {
+                            expression = PXCMFaceData.ExpressionsData.FaceExpression.EXPRESSION_EYES_UP;
+                            intensity = EXPRESSION_THRESHOLD;
+                        }
+                        else if (intensity > 40)
+                        {
+                            intensity = EXPRESSION_THRESHOLD;
+                        }
+                    }
+
+                    // Smile intensity is too low by default to detect with common threshlod.
+                    else if (expression == PXCMFaceData.ExpressionsData.FaceExpression.EXPRESSION_SMILE)
+                    {
+                        intensity = Math.Min(intensity + 50, 100);
+                    }
+
                     if (intensity >= EXPRESSION_THRESHOLD)
                     {
                         activeExpressions.Add((FacialExpression)expression);

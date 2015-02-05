@@ -28,10 +28,12 @@ namespace SharpSenses {
                 var old = _facialExpressions;
                 _facialExpressions = value;
                 foreach (var expression in _facialExpressions ?? new FacialExpression[0]) {
-                    if (!old.Contains(expression)) OnFacialExpressionBegin(expression);
+                    if (old != null && !old.Contains(expression)) 
+                        OnFacialExpressionBegin(expression);
                 }
                 foreach (var expression in old ?? new FacialExpression[0]) {
-                    if (!_facialExpressions.Contains(expression)) OnFacialExpressionEnd(expression);
+                    if (_facialExpressions != null && !_facialExpressions.Contains(expression)) 
+                        OnFacialExpressionEnd(expression);
                 }
             }
         }
