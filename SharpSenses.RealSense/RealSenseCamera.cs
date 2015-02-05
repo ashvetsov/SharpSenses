@@ -257,10 +257,10 @@ namespace SharpSenses.RealSense {
                 allEmotions.Where(e => (int)e.eid > 0 && (int)e.eid <= 64 && e.intensity > 0.4).ToList();
             if (emotions.Any()) {
                 var emotion = emotions.OrderByDescending(e => e.evidence).First();
-                Face.FacialExpression = (FacialExpression)emotion.eid;
+                Face.FacialEmotion = (FacialEmotion)emotion.eid;
             }
             else {
-                Face.FacialExpression = FacialExpression.None;
+                Face.FacialEmotion = FacialEmotion.None;
             }
             emotionInfo.Dispose();
         }

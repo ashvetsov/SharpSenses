@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SharpSenses
 {
-    public enum FacialExpression
+    public enum FacialEmotion
     {
         Anger = 1,
         Contempt = 2,

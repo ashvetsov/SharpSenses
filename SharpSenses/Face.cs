@@ -2,40 +2,40 @@
 
 namespace SharpSenses {
     public class Face : Item {
-        private FacialExpression _facialExpression;
+        private FacialEmotion _facialEmotion;
         public Mouth Mouth { get; private set; }
 
-        public FacialExpression FacialExpression {
-            get { return _facialExpression; }
+        public FacialEmotion FacialEmotion {
+            get { return _facialEmotion; }
             set {
-                if (_facialExpression == value) {
+                if (_facialEmotion == value) {
                     return;
                 }
-                var old = _facialExpression;
-                _facialExpression = value;
-                RaisePropertyChanged(() => FacialExpression);
-                OnFacialExpresssionChanged(old, value);
+                var old = _facialEmotion;
+                _facialEmotion = value;
+                RaisePropertyChanged(() => FacialEmotion);
+                OnFacialEmotionChanged(old, value);
             }
         }
 
-        public event EventHandler<FacialExpressionEventArgs> FacialExpresssionChanged;
+        public event EventHandler<FacialEmotionEventArgs> FacialEmotionChanged;
 
         public Face() {
             Mouth = new Mouth();
         }
-        protected virtual void OnFacialExpresssionChanged(FacialExpression old, FacialExpression @new) {
-            var handler = FacialExpresssionChanged;
-            if (handler != null) handler(this, new FacialExpressionEventArgs(old, @new));
+        protected virtual void OnFacialEmotionChanged(FacialEmotion old, FacialEmotion @new) {
+            var handler = FacialEmotionChanged;
+            if (handler != null) handler(this, new FacialEmotionEventArgs(old, @new));
         }
     }
 
-    public class FacialExpressionEventArgs : EventArgs {
-        public FacialExpression OldFacialExpression { get; set; }
-        public FacialExpression NewFacialExpression { get; set; }
+    public class FacialEmotionEventArgs : EventArgs {
+        public FacialEmotion OldFacialEmotion { get; set; }
+        public FacialEmotion NewFacialEmotion { get; set; }
 
-        public FacialExpressionEventArgs(FacialExpression oldFacialExpression, FacialExpression newFacialExpression) {
-            OldFacialExpression = oldFacialExpression;
-            NewFacialExpression = newFacialExpression;
+        public FacialEmotionEventArgs(FacialEmotion oldFacialEmotion, FacialEmotion newFacialEmotion) {
+            OldFacialEmotion = oldFacialEmotion;
+            NewFacialEmotion = newFacialEmotion;
         }
     }
 }
