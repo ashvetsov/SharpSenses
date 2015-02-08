@@ -544,6 +544,7 @@ namespace SharpSenses.RealSense {
 
         public override void Dispose() {
             _cancellationToken.Cancel();
+            Thread.Sleep(500);
             try {
                 _manager.Dispose();
             }
